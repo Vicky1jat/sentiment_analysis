@@ -1,25 +1,44 @@
-import requests
-import json
+"""
+This module provides a function to analyze sentiment using the IBM Watson NLP API.
+"""
+
+import requests  # Third-party import
+# Removed `import json` as it was unused
 
 def sentiment_analyzer(text_to_analyse):
-    # URL of the sentiment analysis service
-    url = 'https://sn-watson-sentiment-bert.labs.skills.network/v1/watson.runtime.nlp.v1/NlpService/SentimentPredict'
+    """
+    Analyze sentiment of the provided text using Watson NLP sentiment API.
 
-    # Constructing the request payload in the expected format
-    myobj = { "raw_document": { "text": text_to_analyse } }
+    Args:
+        text_to_analyse (str): The input text to analyze.
 
-    # Custom header specifying the model ID for the sentiment analysis service
-    header = {"grpc-metadata-mm-model-id": "sentiment_aggregated-bert-workflow_lang_multi_stock"}
+    Returns:
+        dict: A dictionary with 'label' and 'score' if successful, else 'error'.
+    """
+    url = (
+        "https://sn-watson-sentiment-bert.labs.skills.network/"
+        "v1/watson.runtime.nlp.v1/NlpService/SentimentPredict"
+    )
 
-    # Sending a POST request to the sentiment analysis API
-    response = requests.post(url, json=myobj, headers=header)
+    payload = {
+        "raw_document": {
+            "text": text_to_analyse
+        }
+    }
 
-    # Parsing the JSON response from the API
-    formatted_response = json.loads(response.text)
+    headers = {
+        "grpc-metadata-mm-model-id": "sentiment_aggregated-bert-workflow_lang_multi_stock"
+    }
 
-    # Extracting sentiment label and score from the response
-    label = formatted_response['documentSentiment']['label']
-    score = formatted_response['documentSentiment']['score']
+    try:
+        response = requests.post(url, json=payload, headers=headers, timeout=10)
+        response.raise_for_status()
+        result = response.json()  # Use requests' built-in JSON parsing
 
-    # Returning a dictionary containing sentiment analysis results
-    return {'label': label, 'score': score}
+        label = result.get("documentSentiment", {}).get("label")
+        score = result.get("documentSentiment", {}).get("score")
+
+        return {"label": label, "score": score}
+
+    except requests.exceptions.RequestException as error:
+        return {"error": str(error)}
